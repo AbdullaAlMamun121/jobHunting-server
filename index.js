@@ -25,8 +25,7 @@ app.use((req, res, next) => {
 // Mongodb template
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri =
-  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uetnypa.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uetnypa.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -44,13 +43,55 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     client.connect((err) => {
-        if (err) {
-            console.log(err);
-            return;
-        }
+      if (err) {
+        console.log(err);
+        return;
+      }
+    });
+    const adminCollections = client.db("JobHunter").collection("admins");
+
+    app.post("/login", async (req, res) => {
+      const { email } = req.body;
+
+      // Check if the user exists
+      const user = await adminCollections.findOne({ email });
+      if (!user) {
+        return res
+          .status(401)
+          .json({ error: true, message: "Invalid credentials" });
+      }
+      res.json({ user });
     });
 
-    
+    app.post("/logout", (req, res) => {
+ 
+      // Example: Clearing session and user data
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Error logging out:", err);
+          res.status(500).json({ error: "Failed to logout" });
+        } else {
+          res.status(200).json({ message: "Logged out successfully" });
+        }
+      });
+    });
+
+    // register user
+    app.put("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const query = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: user,
+      };
+      const result = await adminCollections.updateOne(
+        query,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
