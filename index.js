@@ -49,6 +49,7 @@ async function run() {
       }
     });
     const adminCollections = client.db("JobHunter").collection("admins");
+    const jobCollections = client.db("JobHunter").collection("jobPost");
 
     app.post("/login", async (req, res) => {
       const { email } = req.body;
@@ -64,7 +65,6 @@ async function run() {
     });
 
     app.post("/logout", (req, res) => {
- 
       // Example: Clearing session and user data
       req.session.destroy((err) => {
         if (err) {
@@ -90,6 +90,18 @@ async function run() {
         updatedDoc,
         options
       );
+      res.send(result);
+    });
+
+    // Insert job post data
+    app.post("/jobs", async (req, res) => {
+      const jobsInfo = req.body;
+      const result = await jobCollections.insertOne(jobsInfo);
+      res.send(result);
+    });
+    // get all houses
+    app.get("/jobs", async (req, res) => {
+      const result = await jobCollections.find().toArray();
       res.send(result);
     });
 
